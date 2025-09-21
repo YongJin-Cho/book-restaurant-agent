@@ -15,18 +15,18 @@ class SimpleAgent(BaseAgent):
     async def _run_async_impl(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        inputs = {self.input_key: ctx.user_content.parts[0].text} if self.input_key else {}
-        output = await self._maybe_await(self.func(**inputs))
+        if self.input_key and ctx.user_content and ctx.user_content.parts:
+            inputs = {self.input_key: ctx.user_content.parts[0].text}
+            output = self.func(**inputs)
+        else:
+            output = self.func()
 
         yield Event(author=self.name, invocation_id=ctx.invocation_id,
                     content=ModelContent(json.dumps(output, ensure_ascii=False)))
 
-    async def _maybe_await(self, value):
-        if callable(getattr(value, "__await__", None)):
-            return await value
-        return value
+from typing import Any, List, Dict
 
-def _handle_user_message(user_message: str) -> str:
+def _handle_user_message(user_message: str = "") -> List[Dict[str, Any]]|Dict[str, Any]:
     if "추천" in user_message or "알려" in user_message:
         return [  {"type":"Message", "text":"강남역에서 점심 먹을만한 식당은 다음과 같습니다."},  {"type":"Restaurant Option", "title":"미소야", "id":"111"},  {"type":"Restaurant Option", "title":"홍콩반점", "id":"222"},  {"type":"Restaurant Option", "title":"양반", "id":"333"} ]
     elif "홍콩반점" in user_message:
