@@ -14,7 +14,11 @@ with open(vector_json_file_path, 'r', encoding='utf-8') as file:
     restaurant_vector = json.load(file)
 
 from sentence_transformers import SentenceTransformer
+
 model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B")
+embedding_dim = model.get_sentence_embedding_dimension()
+if embedding_dim is None:
+    raise ValueError("The model did not return a valid embedding dimension.")
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
@@ -39,9 +43,10 @@ for count, restaurant in enumerate(restaurants, start=1):
 client = QdrantClient() # Connect to Qdrant (default: localhost:6333)
 
 collection_name = "restaurants"
-client.create_collection(
+
+client.recreate_collection(
     collection_name=collection_name,
-    vectors_config=VectorParams(size=model.get_sentence_embedding_dimension(), distance=Distance.COSINE)
+    vectors_config=VectorParams(size=embedding_dim, distance=Distance.COSINE)
 )
 
 client.upsert(collection_name=collection_name, points=points)
